@@ -1,0 +1,75 @@
+show databases
+use tpch
+show tables
+select * from supplier
+select * from part
+select * from nation
+select * from partsupp
+select * from customerorders
+#1
+select n_nationkey as id, n_name as name
+from nation
+where n_regionkey=1;
+select o_custkey from orders
+where o_orderdate > '2018-11-25'
+	and o_totalprice between 265000 and 280000
+order by o_custkey;
+select c_custkey, c_name, c_acctbal
+from customer
+where c_nationkey<2 and c_acctbal<0;
+#4
+select p_name , s_name, n_name
+from part as p
+join partsupp as ps on p.p_partkey=ps.ps_partkey
+join supplier as s on ps.ps_suppkey= s.s_suppkey
+join nation as n on s.s_nationkey=n.n_nationkey
+where p.p_name like "%ivory%" and ( n.n_name="CANADA" or n.n_name="FRANCE")
+order by s.s_name
+limit 8;
+#5
+select distinct F.s_name, S.s_name, F.s_phone, S.s_phone, F.s_acctbal+S.s_acctbal as totalBalance
+from supplier as F
+join supplier as S on F.s_nationkey=S.s_nationkey
+where S.s_suppkey < F.s_suppkey
+and left(F.s_phone,6)=left(S.s_phone,6);
+#6
+select count(c_custkey) as numCustomer, count( distinct c_nationkey) as numCountries, sum(c_acctbal) as totalBalance, avg(length(c_address)) as avgLength
+
+from customer
+where c_mktsegment in ( 'BUILDING', 'AUTOMOBILE', 'MACHINERY')
+	and c_nationkey<10;
+#7
+select c.c_mktsegment, n.n_name, count(distinct c.c_custkey) as numCustomer, count(distinct o.o_orderkey) as numOrders, max(c.c_acctbal) as maxBalance, min(c.c_acctbal) as minBalance
+from customer as c
+join nation as n on c.c_nationkey=n.n_nationkey
+left join orders as o on c.c_custkey=o.o_custkey
+where n.n_name like "%A%"
+group by c.c_mktsegment, n.n_name
+having numCustomer > 10 and numOrders>180 and maxBalance > 9000;
+#8
+select distinct p.p_partkey, p.p_size
+from part as p
+join lineitem as l on p.p_partkey=l.l_partkey
+where (p.p_size >=10 and p.p_size<=12)
+	and p.p_partkey not in (select l_partkey from lineitem where month(l_shipdate)=05)
+order by p.p_size desc, p.p_partkey desc;
+
+#9
+select c_name, c_acctbal
+from customer
+where c_acctbal=( select max(c_acctbal) from customer);
+
+# 10
+
+select avg(Q) from (select l_partkey,sum(l_quantity)as Q from lineitem
+group by l_partkey)
+as aver_age;
+
+
+select CONCAT(p_mfgr,' - ',p_brand) as manufacturerBrand,p_partkey,sum(l_quantity) as totalQty from part 
+join lineitem on p_partkey=l_partkey
+group by manufacturerBrand,p_partkey
+having totalQty in(select sum(l_quantity) as Q from lineitem group by l_partkey having Q>767*1.6)
+order by totalQty desc;
+
+
